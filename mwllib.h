@@ -17,6 +17,7 @@ public:
 	std::string mwldata;
 	MWLFile(std::string mwldata);
 	MWLFile(char* fname);
+    MWLFile() = default;
 
 	std::vector<std::pair<uint32_t, uint32_t>> get_pointer_indexes();
 	std::string get_section(MWLSection section);

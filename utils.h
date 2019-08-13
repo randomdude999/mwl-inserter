@@ -32,6 +32,11 @@ BidiIter random_unique(BidiIter begin, BidiIter end, size_t num_random) {
 	return begin;
 }
 
+inline bool starts_with(std::string const & value, std::string const & beginning) {
+    if(beginning.size() > value.size()) return false;
+    return value.compare(0, beginning.size(), beginning);
+}
+
 inline bool ends_with(std::string const & value, std::string const & ending) {
 	if(ending.size() > value.size()) return false;
 	return std::equal(ending.rbegin(), ending.rend(), value.rbegin());

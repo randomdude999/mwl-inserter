@@ -31,6 +31,9 @@ public:
     // before LM3, only 5 bytes of this are used
     uint8_t secondary_level_header[8];
 
+    // from $0EF310
+    uint8_t layer_2_settings;
+
     // from read3(read3($05D9E4)+$0A)
     uint8_t midway_entrance[4];
 
@@ -62,11 +65,10 @@ public:
     std::vector<layer_object> layer1;
 
     bool layer2_is_bg;
-    union layer2 {
-        std::vector<layer_object> obj;
-        // just a raw tilemap
-        std::string bg;
-    };
+    std::vector<layer_object> layer2_obj;
+    // just a raw tilemap
+    std::string layer2_bg;
+
     std::vector<sprite> sprites;
 
     bool has_custom_palette;

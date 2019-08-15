@@ -60,6 +60,7 @@ level::level(MWLFile input, std::string extra_byte_counts) {
     // 9: midway data (4 bytes)
     // 13: unused (1 byte)
     // 14: more secondary level header (3 bytes)
+    info.level_number = get_little_endian_word(info_section[0]);
     for(int i = 0; i < 5; i++)
         info.secondary_level_header[i] = info_section[2+i];
     for(int i = 0; i < 4; i++)

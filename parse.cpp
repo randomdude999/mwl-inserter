@@ -95,6 +95,20 @@ std::vector<sprite> parse_sprite_data(std::string data, std::map<int, uint8_t> e
     return out;
 }
 
+std::vector<secondary_entrance> parse_secondary_entrances(std::string data) {
+    int entrance_count = (data.length() - 8);
+    std::vector<secondary_entrance> out;
+    for(int i = 0; i < entrance_count; i++) {
+        std::string entrance_data = data.substr(i, 8);
+        secondary_entrance entr;
+        entr.id = get_little_endian_word(entrance_data.c_str());
+        for(int i = 0; i < 5; i++)
+            entr.settings[i] = entrance_data[2+i];
+        out.push_back(entr);
+    }
+    return out;
+}
+
 level::level(MWLFile input, std::string extra_byte_counts) {
     std::string info_section = input.get_section(MWLSection::level);
     // layout:
@@ -140,7 +154,7 @@ level::level(MWLFile input, std::string extra_byte_counts) {
     sprites = parse_sprite_data(sprite_data.substr(1), parse_extra_byte_table(extra_byte_counts), info.sprite_header & 0x20);
 
     std::string secondary_entrance_data = input.get_section(MWLSection::entrance);
-    int entrance_count = (secondary_entrance_data.length() - 8) / 8;
+    secondary_entrances = parse_secondary_entrances(secondary_entrance_data);
 
-    // TODO: sprites, secondary entrances, exanimation, gfx overrides
+    // TODO: exanimation, gfx overrides
 }

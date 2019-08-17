@@ -1,6 +1,8 @@
 #include "mwllib.h"
 #include "utils.h"
+#include "parse.h"
 #include <map>
+#include <unordered_set>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -10,8 +12,9 @@
 
 class translevel {
 public:
-    std::vector<MWLFile> rooms;
-    //std::map<int, int> secondary_entrances;
+    std::vector<level> rooms;
+    std::map<uint16_t, uint16_t> secondary_entrances;
+    std::map<uint16_t, uint16_t> level_numbers;
     std::string level_name;
     std::string message_box_1;
     std::string message_box_2;
@@ -47,6 +50,29 @@ std::vector<std::pair<std::string,bool>> list_files_in_dir(std::string dirname) 
 	return out;
 }
 
+void create_translevel_remapping(std::vector<translevel> &translevels) {
+	uint16_t secondary_entrance_index = 0;
+	uint16_t level_number_index = 0;
+	for (auto &tlvl : translevels) {
+		std::unordered_set<uint16_t> found_entrances;
+		std::unordered_set<uint16_t> found_level_numbers;
+		for (auto &room : tlvl.rooms) {
+			for (auto &entrance : room.secondary_entrances) {
+				if (!found_entrances.insert(entrance.id).second) {
+					throw std::string("Duplicate ID (") + std::to_string(entrance.id) + ") found in translevel";
+				}
+				tlvl.secondary_entrances[entrance.id] = secondary_entrance_index;
+				secondary_entrance_index++;
+			}
+			if (!found_level_numbers.insert(room.info.level_number).second) {
+				throw std::string("Duplicate level number (") + std::to_string(room.info.level_number) + ") found in translevel";
+			}
+			tlvl.level_numbers[room.info.level_number] = level_number_index;
+			level_number_index++;
+		}
+	}
+}
+
 /* expected structure:
      levels/
        level_001/
@@ -72,7 +98,7 @@ std::vector<translevel> load_levels_folder(char* folder_name) {
 			if(ends_with(fname, ".mwl")) {
 				// handle mwl level
 				MWLFile this_lvl = MWLFile((name+"/"+fname).c_str());
-				tlvl.rooms.push_back(this_lvl);
+				tlvl.rooms.push_back(level(this_lvl, ""));
 			} else if(ends_with(fname, ".bin") && (starts_with(fname, "gfx") || starts_with(fname, "GFX"))) {
 				// GFX file
 				std::string number = fname;
@@ -142,6 +168,7 @@ std::vector<translevel> load_levels_folder(char* folder_name) {
 		}
 		out.push_back(tlvl);
 	}
+	create_translevel_remapping(out);
 	return out;
 }
 

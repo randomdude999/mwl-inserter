@@ -23,6 +23,8 @@ public:
 
 class level_info {
 public:
+	uint16_t level_number;
+
     // 5 bytes from the start of layer 1 data
     uint8_t primary_level_header[5];
 

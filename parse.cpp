@@ -51,6 +51,50 @@ std::vector<layer_object> parse_layer_data(std::string data) {
     }
 }
 
+std::map<int, uint8_t> parse_extra_byte_table(std::string extra_byte_counts) {
+    int index;
+    std::map<int, uint8_t> out;
+    for(uint8_t c : extra_byte_counts) {
+        out[index] = c - 3;
+    }
+    return out;
+}
+
+std::vector<sprite> parse_sprite_data(std::string data, std::map<int, uint8_t> extra_byte_counts, bool new_system) {
+    int y_upper_bits = 0;
+    int data_length = data.length();
+    std::vector<sprite> out;
+    for(int i = 0; i < data_length; ) {
+        if(data[i] == 0xFF) {
+            if(!new_system) break;
+            if(data[i+1] == 0xFF) {
+                i += 1;
+            } else if(data[i+1] == 0xFE) {
+                break;
+            } else if(data[i+1] < 0x80) {
+                y_upper_bits = data[i+1];
+                i += 2;
+                continue;
+            } else {
+                throw "invalid additional command in sprite data";
+            }
+        }
+        std::map<char, int> bits = bitdesc_to_values(data.c_str(), "yyyyeeSY xxxxssss nnnnnnnn", i);
+        i += 3;
+        sprite spr;
+        spr.x = bits['x'];
+        spr.y = bits['y'] + (y_upper_bits << 5);
+        spr.extra_bits = bits['e'];
+        spr.screen = bits['s'];
+        spr.spr_id = bits['n'];
+        int extra_byte_c = extra_byte_counts[spr.spr_id + (spr.extra_bits << 8)];
+        spr.extra_bytes = std::vector<uint8_t>(data.begin() + i, data.begin() + i + extra_byte_c);
+        i += extra_byte_c;
+        out.push_back(spr);
+    }
+    return out;
+}
+
 level::level(MWLFile input, std::string extra_byte_counts) {
     std::string info_section = input.get_section(MWLSection::level);
     // layout:
@@ -89,6 +133,11 @@ level::level(MWLFile input, std::string extra_byte_counts) {
     } else {
         has_custom_palette = false;
     }
+
+    std::string sprite_data = input.get_section(MWLSection::sprite);
+    info.sprite_header = sprite_data[0];
+    // bit 6 of header specifies to use the new system, where FF is treated differently
+    sprites = parse_sprite_data(sprite_data.substr(1), parse_extra_byte_table(extra_byte_counts), info.sprite_header & 0x20);
 
     std::string secondary_entrance_data = input.get_section(MWLSection::entrance);
     int entrance_count = (secondary_entrance_data.length() - 8) / 8;
